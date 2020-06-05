@@ -22,7 +22,7 @@ RUN wget https://downloads.openwrt.org/releases/18.06.8/targets/ramips/mt7621/op
 WORKDIR /home/openwrt/img18.06
 RUN mkdir -p files &&\
     make image PROFILE=d-team_newifi-d2 \
-        PACKAGES="-dnsmasq dnsmasq-full -wpad-mini wpad luci-i18n-base-zh-cn luci-i18n-firewall-zh-cn zerotier luci-app-commands luci-i18n-commands-zh-cn" \
+        PACKAGES="-dnsmasq dnsmasq-full -wpad-mini wpad luci-i18n-base-zh-cn luci-i18n-firewall-zh-cn zerotier ttyd" \
         FILES=files/
 
 WORKDIR /home/openwrt

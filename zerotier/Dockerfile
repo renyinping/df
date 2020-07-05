@@ -1,29 +1,33 @@
 ## https://github.com/zerotier/ZeroTierOne/blob/master/ext/installfiles/linux/zerotier-containerized/Dockerfile
 ## NOTE: to retain configuration; mount a Docker volume, or use a bind-mount, on /var/lib/zerotier-one
 
-FROM debian:buster-slim as builder
+FROM alpine:3.12
 
-## Supports x86_64, x86, arm, and arm64
+ENV ZEROTIER_VERSION=1.4.6
 
-RUN apt-get update && apt-get install -y curl gnupg
-RUN apt-key adv --keyserver ha.pool.sks-keyservers.net --recv-keys 0x1657198823e52a61  && \
-    echo "deb http://download.zerotier.com/debian/buster buster main" > /etc/apt/sources.list.d/zerotier.list
-RUN apt-get update && apt-get install -y zerotier-one=1.4.4
-COPY main.sh /var/lib/zerotier-one/main.sh
+RUN set -eux; \
+    apk add --no-cache \
+      libgcc \
+      libstdc++ \
+    ; \
+    apk add --no-cache --virtual build-dependencies \
+      build-base \
+      linux-headers \
+    ; \
+    wget https://github.com/zerotier/ZeroTierOne/archive/$ZEROTIER_VERSION.zip -O /zerotier.zip; \
+    unzip /zerotier.zip -d /; \
+    cd /ZeroTierOne-$ZEROTIER_VERSION; \
+    make; \
+    DESTDIR=/tmp/build make install; \
+    mv /tmp/build/usr/sbin/* /usr/sbin/; \
+    mkdir /var/lib/zerotier-one; \
+    apk del build-dependencies; \
+    rm -rf /tmp/build; \
+    rm -rf /ZeroTierOne-$ZEROTIER_VERSION; \
+    rm -rf /zerotier.zip; \
+    zerotier-one -v
 
-FROM debian:buster-slim
-LABEL version="1.4.4"
-LABEL description="Containerized ZeroTier One for use on CoreOS or other Docker-only Linux hosts."
+COPY entrypoint.sh /entrypoint.sh
 
-# ZeroTier relies on UDP port 9993
-EXPOSE 9993/udp
-
-RUN mkdir -p /var/lib/zerotier-one
-COPY --from=builder /usr/sbin/zerotier-cli /usr/sbin/zerotier-cli
-COPY --from=builder /usr/sbin/zerotier-idtool /usr/sbin/zerotier-idtool
-COPY --from=builder /usr/sbin/zerotier-one /usr/sbin/zerotier-one
-COPY --from=builder /var/lib/zerotier-one/main.sh /main.sh
-
-RUN chmod 0755 /main.sh
-ENTRYPOINT ["/main.sh"]
-CMD ["zerotier-one"]
+VOLUME ["/var/lib/zerotier-one"]
+ENTRYPOINT ["/entrypoint.sh"]

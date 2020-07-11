@@ -17,4 +17,4 @@ docker run \
 
   # webui为ip:81，默认用户名/密码为admin/adminadmin
 
-  # https://github.com/ngosang/trackerslist
+  # https://github.com/ngosang/trackerslist/blob/master/trackers_best_ip.txt

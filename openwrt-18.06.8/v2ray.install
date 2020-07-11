@@ -1,0 +1,22 @@
+#!/bin/sh
+
+chown -R root:root /etc/v2ray
+chmod +x /etc/v2ray/v2ray
+chmod +x /etc/v2ray/v2ctl
+chmod +x /etc/v2ray/v2ray.openwrt
+
+rm -rf /usr/bin/v2ray
+ln -s /etc/v2ray /usr/bin/v2ray
+
+rm -rf /etc/init.d/v2ray
+ln -s /etc/v2ray/v2ray.openwrt /etc/init.d/v2ray
+
+cat <<EOF >> /etc/firewall.user
+# V2RAY 透明代理规则
+iptables -t nat -N V2RAY # 新建一个名为 V2RAY 的链
+iptables -t nat -A V2RAY -p tcp -j REDIRECT --to-ports 12345 # 其余流量转发到 12345 端口（即 V2Ray）
+iptables -t nat -A PREROUTING -p tcp -j V2RAY # 对局域网其他设备进行透明代理
+EOF
+
+/etc/init.d/firewall restart
+/etc/init.d/v2ray start

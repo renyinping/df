@@ -1,0 +1,109 @@
+{
+  "inbounds": [
+    { // socks5 代理
+      "port": 1080, // 监听端口
+      "protocol": "socks", // 入口协议为 SOCKS 5
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
+      },
+      "settings": {
+        "auth": "noauth" //socks的认证设置，noauth 代表不认证，由于 socks 通常在客户端使用，所以这里不认证
+      }
+    },
+    { // redirect 透明代理
+      "port": 12345, //开放的端口号
+      "protocol": "dokodemo-door",
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
+      },
+      "settings": {
+        "network": "tcp,udp",
+        "followRedirect": true // 这里要为 true 才能接受来自 iptables 的流量
+      },
+      "streamSettings": {
+        "sockopt": {
+          "tproxy": "redirect" 
+        }
+      }
+    }
+  ],
+  "outbounds": [ // outbounds 中的第一个出口作为默认的出口
+    { // shadowsocks 服务器
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "address": "c38s1.jamjams.net", // 服务器地址，请修改为你自己的服务器 IP 或域名
+            "method": "aes-256-gcm", // Shadowsocks 的加密方式
+            "ota": true, // 是否开启 OTA，true 为开启
+            "password": "jXAqGCn6BW", // Shadowsocks 的密码
+            "port": 21958 // 服务器端口
+          }
+        ]
+      },
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255  //这里是 SO_MARK，用于 iptables 识别，每个 outbound 都要配置；255可以改成其他数值，但要与下面的 iptables 规则对应；如果有多个 outbound，最好奖所有 outbound 的 SO_MARK 都设置成一样的数值
+        }
+      }
+    },
+    { // 直连出口的 freedom 协议
+      "protocol": "freedom",
+      "settings": {},
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255  //这里是 SO_MARK，用于 iptables 识别，每个 outbound 都要配置；255可以改成其他数值，但要与下面的 iptables 规则对应；如果有多个 outbound，最好奖所有 outbound 的 SO_MARK 都设置成一样的数值
+        }
+      },
+      "tag": "direct" //如果要使用路由，这个 tag 是一定要有的，在这里 direct 就是 freedom 的一个标号，在路由中说 direct V2Ray 就知道是这里的 freedom 了
+    },
+    { // 阻止连接的 blackhole 协议
+      "protocol": "blackhole",
+      "settings": {},
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255  //这里是 SO_MARK，用于 iptables 识别，每个 outbound 都要配置；255可以改成其他数值，但要与下面的 iptables 规则对应；如果有多个 outbound，最好奖所有 outbound 的 SO_MARK 都设置成一样的数值
+        }
+      },
+      "tag": "adblock"//同样的，这个 tag 也是要有的，在路由中说 adblock 就知道是这里的 blackhole（黑洞） 了
+    }
+  ],
+  "routing": { // 路由
+    "domainStrategy": "IPOnDemand",
+    "rules": [ // 规则是从上往下匹配
+      { // 要拦截的网站域名
+        "domain": [
+          "tanx.com",
+          "googeadsserving.cn",
+          "baidu.com"
+        ],
+        "type": "field",
+        "outboundTag": "adblock"
+      },
+      { // 要直连的网站域名
+        "domain": [
+          "taobao.com",
+          "jd.com",
+          "microsoft.com",
+          "amazon.com",
+          "youku.com",
+          "baidu.com",
+          "geosite:cn" // 中国大陆主流网站的域名
+          ],
+        "type": "field",
+        "outboundTag": "direct"
+      },
+      { // 要直连的IP
+        "ip": [
+          "geoip:cn", // 中国大陆的 IP
+          "geoip:private" // 私有地址 IP，如路由器等
+        ],
+        "type": "field",
+        "outboundTag": "direct"
+      }
+    ]
+  }
+}
+

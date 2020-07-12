@@ -23,3 +23,6 @@ ONLYOFFICE
 Nextcloud Talk
 Talk
 在浏览器和移动设备应用中进行聊天，视频通话，屏幕共享，线上见面和网络会议。
+
+docker cp documentserver_community.tar.gz nextcloud:/var/www/html/custom_apps/
+tar -zvxf documentserver_community.tar.gz

@@ -1,0 +1,1 @@
+docker tag yinping/zerotier-one:latest yinping/zerotier-one:arm64
